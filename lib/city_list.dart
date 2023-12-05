@@ -17,15 +17,53 @@ class _CityListComponentState extends State<CityListComponent> {
   late List<Map<String, dynamic>> _searchResult;
   late List<Map<String, dynamic>> _tileDimensions;
   late bool _showSearch;
+  late bool _getWeather;
+  List<Map<String, dynamic>> _response = [];
+  List<Map<String, dynamic>> _current = [];
+  List<Map<String, dynamic>> _weather = [];
+  List<int> _currentHour = [];
 
   bool _isProcessing = false;
-  Map<String, dynamic> _response = {};
+
+  Future<void> getWeather(lon, lat) async {
+    print('LON' + lon.toString());
+    print('LAT' + lat.toString());
+    try {
+      final response = await http.get(Uri.parse(
+          'https://api.openweathermap.org/data/3.0/onecall?lat=${lat}&lon=${lon}&exclude=minutely,hourly,daily,alerts&appid=${one_call}&units=imperial'));
+      final decoded = json.decode(response.body);
+      print(decoded.toString() + '****decoded*****');
+      final decodedCurrent = decoded['current'];
+      print(decoded.toString() + '****current****');
+
+      _response.add(decoded);
+      _current.add(decodedCurrent);
+      _weather.add(decodedCurrent['weather'][0]);
+
+      DateTime utcDateTimeCurrent = DateTime.fromMillisecondsSinceEpoch(
+          (decodedCurrent['dt'] + decoded['timezone_offset']) * 1000,
+          isUtc: true);
+      _currentHour.add(utcDateTimeCurrent.hour);
+
+      setState(() {
+        _getWeather = false;
+        _isProcessing = false;
+      });
+    } catch (e) {
+      print(e.toString());
+      setState(() {
+        _getWeather = false;
+        _isProcessing = false;
+      });
+    }
+  }
 
   @override
   void initState() {
     _searchResult = [];
     _tileDimensions = [];
     _showSearch = true;
+    _getWeather = false;
     super.initState();
   }
 
@@ -58,6 +96,7 @@ class _CityListComponentState extends State<CityListComponent> {
                   onComplete: (value) {
                     setState(() {
                       _searchResult = value;
+                      _getWeather = true;
                     });
                   },
                 ),
@@ -71,6 +110,11 @@ class _CityListComponentState extends State<CityListComponent> {
                   double tileHeight = 100;
                   _tileDimensions
                       .add({'width': tileWidth, 'height': tileHeight});
+                  if (_getWeather == true) {
+                    getWeather(_searchResult[index]['lon'],
+                        _searchResult[index]['lat']);
+                  }
+
                   return InkWell(
                     onTap: () {
                       for (var i = 0; i < _tileDimensions.length; i++) {
@@ -125,14 +169,54 @@ class _CityListComponentState extends State<CityListComponent> {
                               elevation: 25,
                               child: _showSearch
                                   ? Container(
-                                      decoration: const BoxDecoration(
+                                      decoration: BoxDecoration(
                                         borderRadius: BorderRadius.all(
                                             Radius.circular(15)),
                                         gradient: LinearGradient(
-                                          begin: Alignment.topRight,
-                                          end: Alignment.bottomLeft,
-                                          colors: [Colors.yellow, Colors.pink],
-                                        ),
+                                            begin: Alignment.topRight,
+                                            end: Alignment.bottomLeft,
+                                            colors: _currentHour[index] > 0 &&
+                                                    _currentHour[index] <= 4
+                                                ? [
+                                                    Colors.black,
+                                                    Colors.blueGrey
+                                                  ]
+                                                : _currentHour[index] > 4 &&
+                                                        _currentHour[index] <= 8
+                                                    ? [
+                                                        Colors.blueGrey,
+                                                        Colors.green
+                                                      ]
+                                                    : _currentHour[index] > 8 &&
+                                                            _currentHour[
+                                                                    index] <=
+                                                                12
+                                                        ? [
+                                                            Colors.green,
+                                                            Colors.yellow
+                                                          ]
+                                                        : _currentHour[index] >
+                                                                    12 &&
+                                                                _currentHour[
+                                                                        index] <=
+                                                                    16
+                                                            ? [
+                                                                Colors.yellow,
+                                                                Colors.pink
+                                                              ]
+                                                            : _currentHour[index] >
+                                                                        16 &&
+                                                                    _currentHour[
+                                                                            index] <=
+                                                                        20
+                                                                ? [
+                                                                    Colors.pink,
+                                                                    Colors.blue
+                                                                  ]
+                                                                : [
+                                                                    Colors.blue,
+                                                                    Colors.black
+                                                                  ]),
                                       ),
                                       child: ListTile(
                                         tileColor: Colors.transparent,
@@ -155,7 +239,7 @@ class _CityListComponentState extends State<CityListComponent> {
                                       ),
                                     )
                                   : CurrentWeatherComponent(
-                                      data: _searchResult[index],
+                                      data: _response[index],
                                       width: width,
                                       height: height,
                                     ),

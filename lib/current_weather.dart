@@ -37,12 +37,12 @@ class _CurrentWeatherComponentState extends State<CurrentWeatherComponent> {
   bool _isProcessing = true;
   int utcTimestamp = 1701689448;
 
-  Future<void> getWeather(lon, lat) async {
+  Future<void> getWeather(data) async {
     try {
-      final response = await http.get(Uri.parse(
-          'https://api.openweathermap.org/data/3.0/onecall?lat=${lat}&lon=${lon}&exclude=minutely,hourly,daily,alerts&appid=${one_call}&units=imperial'));
+      // final response = await http.get(Uri.parse(
+      //     'https://api.openweathermap.org/data/3.0/onecall?lat=${lat}&lon=${lon}&exclude=minutely,hourly,daily,alerts&appid=${one_call}&units=imperial'));
       setState(() {
-        _response = json.decode(response.body);
+        _response = data;
         _current = _response['current'];
         _weather = _current['weather'][0] as Map<String, dynamic>;
         DateTime utcDateTimeCurrent = DateTime.fromMillisecondsSinceEpoch(
@@ -50,7 +50,7 @@ class _CurrentWeatherComponentState extends State<CurrentWeatherComponent> {
             isUtc: true);
         _currentHour = utcDateTimeCurrent.hour;
         _currentMinute = utcDateTimeCurrent.minute;
-        print(_currentHour.toString());
+        print(_currentHour.toString() + "current");
         DateTime utcDateTimeSunrise = DateTime.fromMillisecondsSinceEpoch(
             _current['sunrise'] * 1000,
             isUtc: true);
@@ -76,7 +76,7 @@ class _CurrentWeatherComponentState extends State<CurrentWeatherComponent> {
     _lat = _data['lat'];
     _width = widget.width;
     _height = widget.height;
-    getWeather(_lon, _lat);
+    getWeather(_data);
     super.initState();
   }
 
