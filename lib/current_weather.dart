@@ -24,12 +24,15 @@ class _CurrentWeatherComponentState extends State<CurrentWeatherComponent> {
   late Map<String, dynamic> _data = {};
   late Map<String, dynamic> _response = {};
   late Map<String, dynamic> _current = {};
-
+  late Map<String, dynamic> _weather = {};
   late double _lon = 0.0;
   late double _lat = 0.0;
   late double _width = 0.0;
   late double _height = 0.0;
+  late DateTime _sunrise = DateTime.now();
+  late DateTime _sunset = DateTime.now();
   bool _isProcessing = true;
+  int utcTimestamp = 1701689448;
 
   Future<void> getWeather(lon, lat) async {
     try {
@@ -38,12 +41,22 @@ class _CurrentWeatherComponentState extends State<CurrentWeatherComponent> {
       setState(() {
         _response = json.decode(response.body);
         _current = _response['current'];
+        _weather = _current['weather'][0] as Map<String, dynamic>;
+        DateTime utcDateTimeSunrise = DateTime.fromMillisecondsSinceEpoch(
+            _current['sunrise'] * 1000,
+            isUtc: true);
+        DateTime localDateTimeSunrise = utcDateTimeSunrise.toLocal();
+        _sunrise = localDateTimeSunrise;
+        DateTime utcDateTimeSunset = DateTime.fromMillisecondsSinceEpoch(
+            _current['sunset'] * 1000,
+            isUtc: true);
+        DateTime localDateTimeSunset = utcDateTimeSunset.toLocal();
+        _sunset = localDateTimeSunset;
         _isProcessing = false;
       });
     } catch (e) {
-      List<Map<String, dynamic>> err = [{}];
+      print(e.toString());
       setState(() {
-        err.add(e as Map<String, dynamic>);
         _isProcessing = false;
       });
     }
@@ -67,6 +80,9 @@ class _CurrentWeatherComponentState extends State<CurrentWeatherComponent> {
       elevation: 15,
       child: Container(
         decoration: BoxDecoration(
+          image: DecorationImage(
+              image: NetworkImage(
+                  'https://openweathermap.org/img/wn/${_weather['icon']}@2x.png')),
           borderRadius: BorderRadius.all(Radius.circular(15)),
           gradient: LinearGradient(
             begin: Alignment.topRight,
@@ -126,7 +142,7 @@ class _CurrentWeatherComponentState extends State<CurrentWeatherComponent> {
                                     Column(
                                       children: [
                                         Text(
-                                          _current['sunrise'].toString(),
+                                          '${_sunrise.toLocal().hour}:${_sunrise.toLocal().minute}',
                                           style: const TextStyle(
                                               color: Colors.white,
                                               fontWeight: FontWeight.bold),
@@ -142,7 +158,7 @@ class _CurrentWeatherComponentState extends State<CurrentWeatherComponent> {
                                     Column(
                                       children: [
                                         Text(
-                                          _current['sunset'].toString(),
+                                          '${_sunset.toLocal().hour}:${_sunset.toLocal().minute}',
                                           style: const TextStyle(
                                               color: Colors.white,
                                               fontWeight: FontWeight.bold),
