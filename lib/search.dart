@@ -17,7 +17,6 @@ class _SearcByCityComponentState extends State<SearcByCityComponent> {
   Map<String, dynamic> _response = {};
   List<dynamic> _searchResponse = [];
   List<Map<String, dynamic>> _responseList = [{}];
-  String _error = "";
   final _cityNameTextController = TextEditingController();
   final _cityNameFocusNode = FocusNode();
 
@@ -28,13 +27,12 @@ class _SearcByCityComponentState extends State<SearcByCityComponent> {
       setState(() {
         _searchResponse = json.decode(response.body);
         _responseList = _searchResponse.cast<Map<String, dynamic>>().toList();
-        print(_responseList);
         widget.onComplete(_responseList);
         _isProcessing = false;
       });
     } catch (e) {
       setState(() {
-        _error = e.toString();
+        print(e.toString());
         _isProcessing = false;
       });
     }

@@ -1,5 +1,5 @@
 import 'dart:convert';
-
+import 'package:intl/intl.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
@@ -31,6 +31,9 @@ class _CurrentWeatherComponentState extends State<CurrentWeatherComponent> {
   late double _height = 0.0;
   late DateTime _sunrise = DateTime.now();
   late DateTime _sunset = DateTime.now();
+  late int _currentHour = 12;
+  late int _currentMinute = 12;
+  bool _isPM = false;
   bool _isProcessing = true;
   int utcTimestamp = 1701689448;
 
@@ -42,16 +45,20 @@ class _CurrentWeatherComponentState extends State<CurrentWeatherComponent> {
         _response = json.decode(response.body);
         _current = _response['current'];
         _weather = _current['weather'][0] as Map<String, dynamic>;
+        DateTime utcDateTimeCurrent = DateTime.fromMillisecondsSinceEpoch(
+            (_current['dt'] + _response['timezone_offset']) * 1000,
+            isUtc: true);
+        _currentHour = utcDateTimeCurrent.hour;
+        _currentMinute = utcDateTimeCurrent.minute;
+        print(_currentHour.toString());
         DateTime utcDateTimeSunrise = DateTime.fromMillisecondsSinceEpoch(
             _current['sunrise'] * 1000,
             isUtc: true);
-        DateTime localDateTimeSunrise = utcDateTimeSunrise.toLocal();
-        _sunrise = localDateTimeSunrise;
+        _sunrise = utcDateTimeSunrise;
         DateTime utcDateTimeSunset = DateTime.fromMillisecondsSinceEpoch(
             _current['sunset'] * 1000,
             isUtc: true);
-        DateTime localDateTimeSunset = utcDateTimeSunset.toLocal();
-        _sunset = localDateTimeSunset;
+        _sunset = utcDateTimeSunset;
         _isProcessing = false;
       });
     } catch (e) {
@@ -83,15 +90,24 @@ class _CurrentWeatherComponentState extends State<CurrentWeatherComponent> {
           image: DecorationImage(
               image: NetworkImage(
                   'https://openweathermap.org/img/wn/${_weather['icon']}@2x.png')),
-          borderRadius: BorderRadius.all(Radius.circular(15)),
+          borderRadius: const BorderRadius.all(Radius.circular(15)),
           gradient: LinearGradient(
-            begin: Alignment.topRight,
-            end: Alignment.bottomLeft,
-            colors: [Colors.yellow, Colors.pink],
-          ),
+              begin: Alignment.topRight,
+              end: Alignment.bottomLeft,
+              colors: _currentHour > 0 && _currentHour <= 4
+                  ? [Colors.black, Colors.blueGrey]
+                  : _currentHour > 4 && _currentHour <= 8
+                      ? [Colors.blueGrey, Colors.green]
+                      : _currentHour > 8 && _currentHour <= 12
+                          ? [Colors.green, Colors.yellow]
+                          : _currentHour > 12 && _currentHour <= 16
+                              ? [Colors.yellow, Colors.pink]
+                              : _currentHour > 16 && _currentHour <= 20
+                                  ? [Colors.pink, Colors.blue]
+                                  : [Colors.blue, Colors.black]),
         ),
         child: _isProcessing
-            ? SizedBox()
+            ? const SizedBox()
             : SizedBox(
                 width: _width,
                 height: _height,
@@ -99,12 +115,36 @@ class _CurrentWeatherComponentState extends State<CurrentWeatherComponent> {
                   children: [
                     Padding(
                       padding: const EdgeInsets.all(8.0),
-                      child: Text(
-                        _data['name'],
-                        style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 52,
-                            fontWeight: FontWeight.bold),
+                      child: Column(
+                        children: [
+                          Text(
+                            _data['name'],
+                            style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 52,
+                                fontWeight: FontWeight.bold),
+                          ),
+                          // ignore: unnecessary_string_interpolations
+                          // Row(
+                          //   mainAxisAlignment: MainAxisAlignment.center,
+                          //   children: [
+                          //     Text(
+                          //       '${_currentHour > 12 ? '${_currentHour - 12}:' : '${_currentHour}:'}${_currentMinute < 10 ? '0${_currentMinute}' : '${_currentMinute}'}',
+                          //       style: const TextStyle(
+                          //           color: Colors.white,
+                          //           fontSize: 52,
+                          //           fontWeight: FontWeight.bold),
+                          //     ),
+                          //     Text(
+                          //       _currentHour > 12 ? 'PM' : 'AM',
+                          //       style: const TextStyle(
+                          //           color: Colors.white,
+                          //           fontSize: 52,
+                          //           fontWeight: FontWeight.bold),
+                          //     )
+                          //   ],
+                          // ),
+                        ],
                       ),
                     ),
                     Expanded(
@@ -121,9 +161,9 @@ class _CurrentWeatherComponentState extends State<CurrentWeatherComponent> {
                                       fontSize: 72,
                                       fontWeight: FontWeight.bold),
                                 ),
-                                Text(
+                                const Text(
                                   'feels like,',
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                       color: Colors.white,
                                       fontSize: 16,
                                       fontWeight: FontWeight.bold),
@@ -139,37 +179,43 @@ class _CurrentWeatherComponentState extends State<CurrentWeatherComponent> {
                                   mainAxisAlignment:
                                       MainAxisAlignment.spaceBetween,
                                   children: [
-                                    Column(
-                                      children: [
-                                        Text(
-                                          '${_sunrise.toLocal().hour}:${_sunrise.toLocal().minute}',
-                                          style: const TextStyle(
-                                              color: Colors.white,
-                                              fontWeight: FontWeight.bold),
-                                        ),
-                                        Text(
-                                          'Sunrise',
-                                          style: const TextStyle(
-                                              color: Colors.white,
-                                              fontWeight: FontWeight.bold),
-                                        ),
-                                      ],
+                                    Padding(
+                                      padding: const EdgeInsets.all(8.0),
+                                      child: Column(
+                                        children: [
+                                          Text(
+                                            '${_sunrise.hour > 12 ? '${_sunrise.hour - 12}:' : '${_sunrise.hour}:'}${_sunrise.minute < 10 ? '0${_sunrise.minute}' : '${_sunrise.minute}'} AM',
+                                            style: const TextStyle(
+                                                color: Colors.white,
+                                                fontWeight: FontWeight.bold),
+                                          ),
+                                          const Text(
+                                            'Sunrise',
+                                            style: TextStyle(
+                                                color: Colors.white,
+                                                fontWeight: FontWeight.bold),
+                                          ),
+                                        ],
+                                      ),
                                     ),
-                                    Column(
-                                      children: [
-                                        Text(
-                                          '${_sunset.toLocal().hour}:${_sunset.toLocal().minute}',
-                                          style: const TextStyle(
-                                              color: Colors.white,
-                                              fontWeight: FontWeight.bold),
-                                        ),
-                                        Text(
-                                          'Sunset',
-                                          style: const TextStyle(
-                                              color: Colors.white,
-                                              fontWeight: FontWeight.bold),
-                                        ),
-                                      ],
+                                    Padding(
+                                      padding: const EdgeInsets.all(8.0),
+                                      child: Column(
+                                        children: [
+                                          Text(
+                                            '${_sunset.hour > 12 ? '${_sunset.hour - 12}:' : '${_sunset.hour}:'}${_sunset.minute < 10 ? '0${_sunset.minute}' : '${_sunset.minute}'} PM',
+                                            style: const TextStyle(
+                                                color: Colors.white,
+                                                fontWeight: FontWeight.bold),
+                                          ),
+                                          const Text(
+                                            'Sunset',
+                                            style: TextStyle(
+                                                color: Colors.white,
+                                                fontWeight: FontWeight.bold),
+                                          ),
+                                        ],
+                                      ),
                                     ),
                                   ],
                                 )
