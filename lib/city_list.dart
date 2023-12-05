@@ -15,55 +15,16 @@ class CityListComponent extends StatefulWidget {
 
 class _CityListComponentState extends State<CityListComponent> {
   late List<Map<String, dynamic>> _searchResult;
+  late List<Map<String, dynamic>> _weatherResult;
   late List<Map<String, dynamic>> _tileDimensions;
   late bool _showSearch;
-  late bool _getWeather;
-  List<Map<String, dynamic>> _response = [];
-  List<Map<String, dynamic>> _current = [];
-  List<Map<String, dynamic>> _weather = [];
-  List<int> _currentHour = [];
-
-  bool _isProcessing = false;
-
-  Future<void> getWeather(lon, lat) async {
-    print('LON' + lon.toString());
-    print('LAT' + lat.toString());
-    try {
-      final response = await http.get(Uri.parse(
-          'https://api.openweathermap.org/data/3.0/onecall?lat=${lat}&lon=${lon}&exclude=minutely,hourly,daily,alerts&appid=${one_call}&units=imperial'));
-      final decoded = json.decode(response.body);
-      print(decoded.toString() + '****decoded*****');
-      final decodedCurrent = decoded['current'];
-      print(decoded.toString() + '****current****');
-
-      _response.add(decoded);
-      _current.add(decodedCurrent);
-      _weather.add(decodedCurrent['weather'][0]);
-
-      DateTime utcDateTimeCurrent = DateTime.fromMillisecondsSinceEpoch(
-          (decodedCurrent['dt'] + decoded['timezone_offset']) * 1000,
-          isUtc: true);
-      _currentHour.add(utcDateTimeCurrent.hour);
-
-      setState(() {
-        _getWeather = false;
-        _isProcessing = false;
-      });
-    } catch (e) {
-      print(e.toString());
-      setState(() {
-        _getWeather = false;
-        _isProcessing = false;
-      });
-    }
-  }
 
   @override
   void initState() {
     _searchResult = [];
+    _weatherResult = [];
     _tileDimensions = [];
     _showSearch = true;
-    _getWeather = false;
     super.initState();
   }
 
@@ -93,10 +54,16 @@ class _CityListComponentState extends State<CityListComponent> {
                 // Provide an optional curve to make the animation feel smoother.
                 curve: Curves.fastOutSlowIn,
                 child: SearcByCityComponent(
-                  onComplete: (value) {
+                  onWeatherComplete: (value) {
+                    print('got city weather: ${value.toString()}');
+                    setState(() {
+                      _weatherResult = value;
+                    });
+                  },
+                  onSearchComplete: (value) {
+                    print('search complete: ${value.toString()}');
                     setState(() {
                       _searchResult = value;
-                      _getWeather = true;
                     });
                   },
                 ),
@@ -110,10 +77,15 @@ class _CityListComponentState extends State<CityListComponent> {
                   double tileHeight = 100;
                   _tileDimensions
                       .add({'width': tileWidth, 'height': tileHeight});
-                  if (_getWeather == true) {
-                    getWeather(_searchResult[index]['lon'],
-                        _searchResult[index]['lat']);
-                  }
+                  Map<String, dynamic> _current =
+                      _weatherResult[index]['current'];
+                  DateTime utcDateTimeCurrent =
+                      DateTime.fromMillisecondsSinceEpoch(
+                          (_current['dt'] +
+                                  _weatherResult[index]['timezone_offset']) *
+                              1000,
+                          isUtc: true);
+                  int _currentHour = utcDateTimeCurrent.hour;
 
                   return InkWell(
                     onTap: () {
@@ -175,39 +147,34 @@ class _CityListComponentState extends State<CityListComponent> {
                                         gradient: LinearGradient(
                                             begin: Alignment.topRight,
                                             end: Alignment.bottomLeft,
-                                            colors: _currentHour[index] > 0 &&
-                                                    _currentHour[index] <= 4
+                                            colors: _currentHour > 0 &&
+                                                    _currentHour <= 4
                                                 ? [
                                                     Colors.black,
                                                     Colors.blueGrey
                                                   ]
-                                                : _currentHour[index] > 4 &&
-                                                        _currentHour[index] <= 8
+                                                : _currentHour > 4 &&
+                                                        _currentHour <= 8
                                                     ? [
                                                         Colors.blueGrey,
                                                         Colors.green
                                                       ]
-                                                    : _currentHour[index] > 8 &&
-                                                            _currentHour[
-                                                                    index] <=
-                                                                12
+                                                    : _currentHour > 8 &&
+                                                            _currentHour <= 12
                                                         ? [
                                                             Colors.green,
                                                             Colors.yellow
                                                           ]
-                                                        : _currentHour[index] >
-                                                                    12 &&
-                                                                _currentHour[
-                                                                        index] <=
+                                                        : _currentHour > 12 &&
+                                                                _currentHour <=
                                                                     16
                                                             ? [
                                                                 Colors.yellow,
                                                                 Colors.pink
                                                               ]
-                                                            : _currentHour[index] >
+                                                            : _currentHour >
                                                                         16 &&
-                                                                    _currentHour[
-                                                                            index] <=
+                                                                    _currentHour <=
                                                                         20
                                                                 ? [
                                                                     Colors.pink,
@@ -239,7 +206,7 @@ class _CityListComponentState extends State<CityListComponent> {
                                       ),
                                     )
                                   : CurrentWeatherComponent(
-                                      data: _response[index],
+                                      data: _weatherResult[index],
                                       width: width,
                                       height: height,
                                     ),
