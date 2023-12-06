@@ -7,8 +7,10 @@ import 'env.dart';
 class SearcByCityComponent extends StatefulWidget {
   const SearcByCityComponent(
       {super.key,
+      required this.onStart,
       required this.onWeatherComplete,
       required this.onSearchComplete});
+  final ValueChanged<bool> onStart;
   final ValueChanged<List<Map<String, dynamic>>> onWeatherComplete;
   final ValueChanged<List<Map<String, dynamic>>> onSearchComplete;
 
@@ -56,12 +58,11 @@ class _SearcByCityComponentState extends State<SearcByCityComponent> {
             'https://api.openweathermap.org/data/3.0/onecall?lat=${cityData[i]['lat']}&lon=${cityData[i]['lon']}&exclude=minutely,hourly,daily,alerts&appid=${weather_key}&units=imperial'));
         final decoded = json.decode(response.body);
         print('decoded weather response: ${decoded}');
-        final decodedCurrent = decoded['current'];
-        _response.add(decodedCurrent);
+        _response.add(decoded);
       }
       setState(() {
         widget.onWeatherComplete(_response);
-        _isProcessing = false;
+        widget.onStart(false);
       });
     } catch (e) {
       print(e.toString());
@@ -92,8 +93,9 @@ class _SearcByCityComponentState extends State<SearcByCityComponent> {
                     focusNode: _cityNameFocusNode,
                     decoration: const InputDecoration(
                       filled: true,
-                      fillColor: Colors.transparent,
+                      fillColor: Colors.white,
                       border: OutlineInputBorder(
+                        borderSide: BorderSide(color: Colors.black),
                         borderRadius: BorderRadius.all(Radius.circular(10)),
                       ),
                       labelText: "City Name",
@@ -106,7 +108,7 @@ class _SearcByCityComponentState extends State<SearcByCityComponent> {
                   child: IconButton(
                       onPressed: () {
                         setState(() {
-                          _isProcessing = true;
+                          widget.onStart(true);
                           getCity(_cityNameTextController.text);
                         });
                       },

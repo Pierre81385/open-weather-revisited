@@ -9,9 +9,12 @@ class CurrentWeatherComponent extends StatefulWidget {
   const CurrentWeatherComponent(
       {super.key,
       required this.data,
+      required this.city,
       required this.width,
       required this.height});
+
   final Map<String, dynamic> data;
+  final Map<String, dynamic> city;
   final double width;
   final double height;
 
@@ -22,6 +25,8 @@ class CurrentWeatherComponent extends StatefulWidget {
 
 class _CurrentWeatherComponentState extends State<CurrentWeatherComponent> {
   late Map<String, dynamic> _data = {};
+  late Map<String, dynamic> _city = {};
+
   late Map<String, dynamic> _response = {};
   late Map<String, dynamic> _current = {};
   late Map<String, dynamic> _weather = {};
@@ -72,8 +77,7 @@ class _CurrentWeatherComponentState extends State<CurrentWeatherComponent> {
   @override
   void initState() {
     _data = widget.data;
-    _lon = _data['lon'];
-    _lat = _data['lat'];
+    _city = widget.city;
     _width = widget.width;
     _height = widget.height;
     getWeather(_data);
@@ -118,7 +122,7 @@ class _CurrentWeatherComponentState extends State<CurrentWeatherComponent> {
                       child: Column(
                         children: [
                           Text(
-                            _data['name'],
+                            _city['name'],
                             style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 52,
